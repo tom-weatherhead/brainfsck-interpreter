@@ -3,6 +3,8 @@
 
 import { readFile } from 'fs/promises';
 
+const characterEncoding = 'utf8';
+
 function calculateSquareBracketPairIndices(programTape: string): [number, number][] {
 	const result: [number, number][] = [];
 	const leftSquareBracketIndices: number[] = [];
@@ -44,78 +46,29 @@ function getMatchingBracketIndex(
 	return foo[1 - bracketIndex] + 1;
 }
 
-// const bufferForGetChar = Buffer.alloc(1);
+// From https://stackoverflow.com/questions/5006821/nodejs-how-to-read-keystrokes-from-stdin :
 
-async function getChar(): Promise<string> {
-	// Attempt 1:
-	// From https://nodejs.org/api/fs.html#fsreadsyncfd-buffer-offset-length-position :
-	// fs.readSync(fd, buffer, offset, length, position);
-	// fd === 0 means stdin. (1 === stdout; 2 === stderr.)
+async function getKeypress(): Promise<string> {
+	return new Promise((resolve) => {
+		process.stdin.setRawMode(true); // So we will get each keypress
+		process.stdin.resume(); // Resume stdin in the parent process
+		process.stdin.once('data', (buffer) => {
+			// once() is like on(), but once() removes the listener also.
+			process.stdin.setRawMode(false);
 
-	// fs.readSync(0, bufferForGetChar, 0, 1, 0);
-	// fs.readSync(process.stdin.fd, bufferForGetChar, 0, 1, 0);
+			const key = buffer.toString(characterEncoding);
 
-	// Attempt 2:
-	// process.stdin.resume();
-	// // var fs = require('fs');
-	// const response = fs.readSync(process.stdin.fd, bufferForGetChar); // 100, 0, 'utf8');
-	// process.stdin.pause();
-	//
-	// console.log('getChar() : readSync response:', typeof response, response);
-	// console.log('getChar() : bufferForGetChar:', bufferForGetChar.toString('utf8'));
+			if (key === '\u0003') {
+				console.log('\nExecution stopped via Ctrl-C.');
+				process.exit(0);
+			}
 
-	// return bufferForGetChar.toString('utf8');
-
-	// Attempt 3 (placeholder) :
-	// return '\0';
-
-	// Attempt 4:
-	// macOS: Type a character, and then press ctrl-D twice.
-	// console.log('\nType a character, and then press ctrl-D twice:');
-	//
-	// return /* fs. */ readFileSync('/dev/stdin').toString('utf8'); // *nix only, not Windows
-
-	// Attempt 5:
-	// let result: string;
-	//
-	// for (;;) {
-	// 	const resultXXX = process.stdin.read(1); // .toString('utf8');
-	// 	console.log('getChar() : process.stdin.read(1) result:', typeof resultXXX, resultXXX);
-	//
-	// 	if (resultXXX !== null) {
-	// 		result = resultXXX.toString('utf8');
-	// 		break;
-	// 	}
-	//
-	// 	// process.sleep(1);
-	// }
-	//
-	// console.log('getChar() : result:', typeof result, result);
-	//
-	// return result;
-
-	// Attempt 6: async"
-	// fs.readSync(process.stdin.fd, bufferForGetChar, 0, 1, 0);
-
-	console.log('\nType a character, and then press return:');
-
-	let result;
-
-	for (;;) {
-		result = await process.stdin.read(1);
-		console.log('getChar() : result:', typeof result, result);
-
-		if (`${result}` !== 'null') {
-			break;
-		}
-
-		await new Promise((r) => setTimeout(r, 1000)); // Sleep for one second.
-	}
-
-	return result.toString('utf8');
+			resolve(key);
+		});
+	});
 }
 
-async function main(): Promise<string> {
+async function main(): Promise<void> {
 	if (process.argv.length !== 3) {
 		throw new Error('process.argv.length !== 3');
 	}
@@ -125,7 +78,7 @@ async function main(): Promise<string> {
 	let programTape = '';
 
 	try {
-		programTape = await readFile(filepath, 'utf8');
+		programTape = await readFile(filepath, characterEncoding);
 	} catch (error) {
 		console.error('readFile() error:', error);
 		throw error;
@@ -155,8 +108,9 @@ async function main(): Promise<string> {
 	const dataTape = [0];
 	let dataTapeIndex = 0;
 
-	let printedText = '';
+	// let printedText = '';
 	let maxCharsToPrint = -1; // Set to a negative number to avoid limiting printed chars
+	let c: string;
 
 	while (programTapeIndex < programTape.length) {
 		const char = programTape[programTapeIndex++];
@@ -187,12 +141,15 @@ async function main(): Promise<string> {
 
 			case ',': // Input a character and store it in the cell at the pointer
 				// ? See https://stackoverflow.com/questions/3430939/node-js-readsync-from-stdin
-				dataTape[dataTapeIndex] = (await getChar()).charCodeAt(0);
+				// dataTape[dataTapeIndex] = (await getChar()).charCodeAt(0);
+				dataTape[dataTapeIndex] = (await getKeypress()).charCodeAt(0);
 				break;
 
 			case '.': // Output the character signified by the cell at the pointer
-				console.log('Printing:', String.fromCharCode(dataTape[dataTapeIndex]));
-				printedText = printedText + String.fromCharCode(dataTape[dataTapeIndex]);
+				c = String.fromCharCode(dataTape[dataTapeIndex]);
+				// console.log('Printing:', );
+				process.stdout.write(c);
+				// printedText = printedText + c;
 
 				if (maxCharsToPrint > 0) {
 					maxCharsToPrint--;
@@ -233,13 +190,18 @@ async function main(): Promise<string> {
 		}
 	}
 
-	return printedText;
+	// return printedText;
 }
 
 main()
-	.then((printedText: string) => {
-		console.log(`Final printedText: '${printedText}'`);
-	})
+	.then()
+	// .then((printedText: string) => {
+	// 	console.log(`Final printedText: '${printedText}'`);
+	// })
 	.catch((error: unknown) => {
 		console.error('Outermost catch: error:', typeof error, error);
+	})
+	.finally(() => {
+		// process.stdin.close() ? or .pause() ? etc.
+		process.exit(0);
 	});
