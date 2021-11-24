@@ -2,6 +2,7 @@
 // ThAW: Started on 2021-11-20
 
 import { readFile } from 'fs/promises';
+import { argv, exit, stdin, stdout } from 'process';
 
 const characterEncoding = 'utf8';
 
@@ -50,17 +51,17 @@ function getMatchingBracketIndex(
 
 async function getKeypress(): Promise<string> {
 	return new Promise((resolve) => {
-		process.stdin.setRawMode(true); // So we will get each keypress
-		process.stdin.resume(); // Resume stdin in the parent process
-		process.stdin.once('data', (buffer) => {
+		stdin.setRawMode(true); // So we will get each keypress
+		stdin.resume(); // Resume stdin in the parent process
+		stdin.once('data', (buffer) => {
 			// once() is like on(), but once() removes the listener also.
-			process.stdin.setRawMode(false);
+			stdin.setRawMode(false);
 
 			const key = buffer.toString(characterEncoding);
 
 			if (key === '\u0003') {
 				console.log('\nExecution stopped via Ctrl-C.');
-				process.exit(0);
+				exit(0);
 			}
 
 			resolve(key);
@@ -69,11 +70,11 @@ async function getKeypress(): Promise<string> {
 }
 
 async function main(): Promise<void> {
-	if (process.argv.length !== 3) {
-		throw new Error('process.argv.length !== 3');
+	if (argv.length !== 3) {
+		throw new Error('argv.length !== 3');
 	}
 
-	const filepath = process.argv[2];
+	const filepath = argv[2];
 
 	let programTape = '';
 
@@ -148,7 +149,7 @@ async function main(): Promise<void> {
 			case '.': // Output the character signified by the cell at the pointer
 				c = String.fromCharCode(dataTape[dataTapeIndex]);
 				// console.log('Printing:', );
-				process.stdout.write(c);
+				stdout.write(c);
 				// printedText = printedText + c;
 
 				if (maxCharsToPrint > 0) {
@@ -202,6 +203,6 @@ main()
 		console.error('Outermost catch: error:', typeof error, error);
 	})
 	.finally(() => {
-		// process.stdin.close() ? or .pause() ? etc.
-		process.exit(0);
+		// stdin.close() ? or .pause() ? etc.
+		exit(0);
 	});

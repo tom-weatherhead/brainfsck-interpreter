@@ -28,7 +28,7 @@ export default {
 			compact: true
 		}
 	],
-	external: ['fs/promises'],
+	external: ['fs/promises', 'process'],
 	context: 'this',
 	plugins: [terser()]
 };
