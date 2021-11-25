@@ -32,7 +32,7 @@ Now the interpreter can be invoked from the command line via the 'bfi' command.
 Example:
 
 ```sh
-$ bfi examples/e.bf
+$ bfi examples/hello-world.bf
 ```
 
 ## About the Language

@@ -2,7 +2,7 @@
 // ThAW: Started on 2021-11-20
 
 import { readFile } from 'fs/promises';
-import { argv, exit, stdin, stdout } from 'process';
+import { argv, exit, stderr, stdin, stdout } from 'process';
 
 const characterEncoding = 'utf8';
 
@@ -60,7 +60,8 @@ async function getKeypress(): Promise<string> {
 			const key = buffer.toString(characterEncoding);
 
 			if (key === '\u0003') {
-				console.log('\nExecution stopped via Ctrl-C.');
+				// console.log('\nExecution stopped via Ctrl-C.');
+				stderr.write('\nExecution stopped via Ctrl-C.\n');
 				exit(0);
 			}
 
@@ -81,7 +82,8 @@ async function main(): Promise<void> {
 	try {
 		programTape = await readFile(filepath, characterEncoding);
 	} catch (error) {
-		console.error('readFile() error:', error);
+		// console.error('readFile() error:', error);
+		stderr.write(`readFile() error: [${typeof error}] ${error}\n`);
 		throw error;
 	}
 
@@ -200,7 +202,8 @@ main()
 	// 	console.log(`Final printedText: '${printedText}'`);
 	// })
 	.catch((error: unknown) => {
-		console.error('Outermost catch: error:', typeof error, error);
+		// console.error('Outermost catch: error:', typeof error, error);
+		stderr.write(`Outermost catch: error: [${typeof error}] ${error}\n`);
 	})
 	.finally(() => {
 		// stdin.close() ? or .pause() ? etc.

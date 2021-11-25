@@ -27,6 +27,7 @@ export default {
 			esModule: true,
 			compact: true
 		}
+		// Do not create a browser version
 	],
 	external: ['fs/promises', 'process'],
 	context: 'this',
