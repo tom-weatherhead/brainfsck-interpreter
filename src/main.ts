@@ -60,7 +60,6 @@ async function getKeypress(): Promise<string> {
 			const key = buffer.toString(characterEncoding);
 
 			if (key === '\u0003') {
-				// console.log('\nExecution stopped via Ctrl-C.');
 				stderr.write('\nExecution stopped via Ctrl-C.\n');
 				exit(0);
 			}
@@ -77,45 +76,25 @@ async function main(): Promise<void> {
 
 	const filepath = argv[2];
 
+	let programTapeIndex = 0;
 	let programTape = '';
 
 	try {
 		programTape = await readFile(filepath, characterEncoding);
 	} catch (error) {
-		// console.error('readFile() error:', error);
 		stderr.write(`readFile() error: [${typeof error}] ${error}\n`);
 		throw error;
 	}
-
-	let programTapeIndex = 0;
-
-	// From https://esolangs.org/wiki/Brainfuck : It prints 'Hello World!\n'
-	// const programTape =
-	// 	'++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.';
-
-	// A brainfuck interpreter implemented in brainfuck:
-	//
-	// >>>+[[-]>>[-]++>+>+++++++[<++++>>++<-]++>>+>+>+++++[>++>++++++<<-]+>>>,<++[[>[
-	// ->>]<[>>]<<-]<[<]<+>>[>]>[<+>-[[<+>-]>]<[[[-]<]++<-[<+++++++++>[<->-]>>]>>]]<<
-	// ]<]<[[<]>[[>]>>[>>]+[<<]<[<]<+>>-]>[>]+[->>]<<<<[[<<]<[<]+<<[+>+<<-[>-->+<<-[>
-	// +<[>>+<<-]]]>[<+>-]<]++>>-->[>]>>[>>]]<<[>>+<[[<]<]>[[<<]<[<]+[-<+>>-[<<+>++>-
-	// [<->[<<+>>-]]]<[>+<-]>]>[>]>]>[>>]>>]<<[>>+>>+>>]<<[->>>>>>>>]<<[>.>>>>>>>]<<[
-	// >->>>>>]<<[>,>>>]<<[>+>]<<[+<<]<]
-	//
-	// [input a brainfuck program and its input, separated by an exclamation point.
-	// Daniel B Cristofani (cristofdathevanetdotcom)
-	// http://www.hevanet.com/cristofd/brainfuck/]
 
 	const squareBracketPairIndices = calculateSquareBracketPairIndices(programTape);
 
 	const dataTape = [0];
 	let dataTapeIndex = 0;
 
-	// let printedText = '';
 	let maxCharsToPrint = -1; // Set to a negative number to avoid limiting printed chars
 	let c: string;
 
-	while (programTapeIndex < programTape.length) {
+	while (programTapeIndex < programTape.length && maxCharsToPrint !== 0) {
 		const char = programTape[programTapeIndex++];
 
 		switch (char) {
@@ -144,15 +123,12 @@ async function main(): Promise<void> {
 
 			case ',': // Input a character and store it in the cell at the pointer
 				// ? See https://stackoverflow.com/questions/3430939/node-js-readsync-from-stdin
-				// dataTape[dataTapeIndex] = (await getChar()).charCodeAt(0);
 				dataTape[dataTapeIndex] = (await getKeypress()).charCodeAt(0);
 				break;
 
 			case '.': // Output the character signified by the cell at the pointer
 				c = String.fromCharCode(dataTape[dataTapeIndex]);
-				// console.log('Printing:', );
 				stdout.write(c);
-				// printedText = printedText + c;
 
 				if (maxCharsToPrint > 0) {
 					maxCharsToPrint--;
@@ -187,22 +163,12 @@ async function main(): Promise<void> {
 			default:
 				break;
 		}
-
-		if (maxCharsToPrint === 0) {
-			break;
-		}
 	}
-
-	// return printedText;
 }
 
 main()
 	.then()
-	// .then((printedText: string) => {
-	// 	console.log(`Final printedText: '${printedText}'`);
-	// })
 	.catch((error: unknown) => {
-		// console.error('Outermost catch: error:', typeof error, error);
 		stderr.write(`Outermost catch: error: [${typeof error}] ${error}\n`);
 	})
 	.finally(() => {
