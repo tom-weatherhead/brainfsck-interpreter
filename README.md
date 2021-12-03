@@ -43,7 +43,8 @@ In a syntactically correct brainf*ck program, each [ character is matched unique
 An example of a "Hello, World!" program:
 
 ```
-++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
+++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>
+---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
 ```
 
 ## Installation and Invocation
