@@ -3,6 +3,7 @@ A Typescript implementation of a brainf*ck interpreter.
 
 (Pardon my language.)
 
+[![build status][build-status-badge-image]][build-status-url]
 [![latest tag][latest-tag-badge-image]][latest-tag-url]
 [![watchers][watchers-badge-image]][watchers-url]
 [![stars][stars-badge-image]][stars-url]
@@ -60,6 +61,8 @@ $ npm i -D @babel/core @babel/preset-env @babel/preset-typescript @types/jest je
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
 
+[build-status-badge-image]: https://circleci.com/gh/tom-weatherhead/brainfsck-interpreter.svg?style=shield
+[build-status-url]: https://circleci.com/gh/tom-weatherhead/brainfsck-interpreter
 [latest-tag-badge-image]: https://badgen.net/github/tag/tom-weatherhead/brainfsck-interpreter
 [latest-tag-url]: https://github.com/tom-weatherhead/brainfsck-interpreter/tags
 [watchers-badge-image]: https://badgen.net/github/watchers/tom-weatherhead/brainfsck-interpreter
