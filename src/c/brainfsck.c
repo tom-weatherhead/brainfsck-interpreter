@@ -4,11 +4,22 @@
 /* To compile and link: $ make */
 /* To remove all build products: $ make clean */
 
+/* A demonstration: $ make && ./brainfsck ../../examples/hello-world.bf */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 /* #include <ctype.h> */
 /* #include <assert.h> */
+
+/* #if WINDOWS */
+/* #include <conio.h> / * For non-blocking getch() (without echo) and getche() (with echo) */
+/* #endif */
+
+/* #if MACOS or LINUX */
+#include <termios.h>
+#include <unistd.h>
+/* #endif */
 
 #if !defined(BOOL) && !defined(FALSE) && !defined(TRUE)
 /* Our poor man's Boolean data type: */
@@ -86,47 +97,85 @@ int getMatchingBracketIndex(int i, int bracketIndex) {
 	return -1; /* I.e. No match found */
 }
 
-/*
-// From https://stackoverflow.com/questions/5006821/nodejs-how-to-read-keystrokes-from-stdin :
+/* #if MACOS or LINUX */
+/* From https://www.reddit.com/r/C_Programming/comments/v5k3z1/reading_char_for_char_from_stdin_without_waiting/ : */
 
-async function getKeypress(): Promise<string> {
-	return new Promise((resolve) => {
-		stdin.setRawMode(true); // So we will get each keypress
-		stdin.resume(); // Resume stdin in the parent process
-		stdin.once('data', (buffer) => {
-			// once() is like on(), but once() removes the listener also.
-			stdin.setRawMode(false);
+/* 2022-08-15 : This works on MacOS 12.5 with gcc: */
 
-			const key = buffer.toString(characterEncoding);
+int getch()  {
+	int ch;
+	struct termios oldattr, newattr;
 
-			if (key === '\u0003') {
-				stderr.write('\nExecution stopped via Ctrl-C.\n');
-				exit(0);
-			}
+	tcgetattr(STDIN_FILENO, &oldattr);
+	newattr = oldattr;
+	newattr.c_lflag &= ~ICANON;
+	/* If the ECHO fplag is enabled, then we have implemented getche() rather than getch() */
+	newattr.c_lflag &= ~ECHO;
+	newattr.c_cc[VMIN] = 1;
+	newattr.c_cc[VTIME] = 0;
+	tcsetattr(STDIN_FILENO, TCSANOW, &newattr);
+	ch = getchar();
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldattr);
 
-			resolve(key);
-		});
-	});
+	return (ch == 4) ? EOF : ch;
+}
+/* #endif */
+
+BOOL readProgramFromFile(int argc, char * argv[]) {
+
+	if (argc < 2) {
+		fprintf(stderr, "readProgramFromFile() : Too few command-line arguments.\n");
+		return FALSE;
+	}
+
+	FILE * fp = fopen(argv[1], "r");
+	/* Then read all text from fp and store it in programTape. */
+
+	if (fp == NULL) {
+		fprintf(stderr, "readProgramFromFile() : Failed to open the file '%s'.\n", argv[1]);
+		return FALSE;
+	}
+
+	memset(programTape, 0, maxProgramTapeLength * sizeof(char));
+
+	int i;
+
+	for (i = 0; ; ++i) {
+		const int ch = getc(fp);
+
+		if (ch == EOF) {
+			break;
+		} else if (i >= maxProgramTapeLength) {
+			fprintf(stderr, "readProgramFromFile() : Program tape overflow\n");
+			fclose(fp);
+			return FALSE;
+		}
+
+		programTape[i] = (char)ch;
+	}
+
+	fclose(fp);
+	return TRUE;
 }
 
-main()
-	.then()
-	.catch((error: unknown) => {
-		stderr.write(`Outermost catch: error: [${typeof error}] ${error}\n`);
-	})
-	.finally(() => {
-		// stdin.close() ? or .pause() ? etc.
-		exit(0);
-	});
- */
+int mainDelegate(int argc, char * argv[]) {
+	/* The Hello, World program:
+	strcpy(programTape, "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++."); */
 
-int mainDelegate(void) {
-	/* The Hello, World program: */
-	strcpy(programTape, "++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
+	/* The Echo program:
+	strcpy(programTape, ",[.,]"); */
+
+	/* The ... program:
+	strcpy(programTape, ""); */
+
+	if (!readProgramFromFile(argc, argv)) {
+		fprintf(stderr, "readProgramFromFile() failed.\n");
+		return 1; /* One (as a Unix exit code) indicates an error. */
+	}
 
 	if (!calculateSquareBracketPairIndices()) {
 		fprintf(stderr, "calculateSquareBracketPairIndices() failed.\n");
-		return 1; /* One (as a Unix exit code) indicates an error. */
+		return 1;
 	}
 
 	printf("Starting the Brainfsck interpreter...\n\n");
@@ -145,8 +194,9 @@ int mainDelegate(void) {
 
 	memset(dataTape, 0, maxDataTapeLength * sizeof(char));
 
-	/* let maxCharsToPrint = -1; // Set to a negative number to avoid limiting printed chars
-	let c: string; */
+	/* let maxCharsToPrint = -1; // Set to a negative number to avoid limiting printed chars */
+
+	int valueFromGetchar = 0;
 
 	/* while (programTapeIndex < programTape.length && maxCharsToPrint !== 0) { */
 	while (programTapeIndex < maxProgramTapeLength && programTape[programTapeIndex] != '\0') {
@@ -184,13 +234,33 @@ int mainDelegate(void) {
 			case ',': /* Input a character and store it in the cell at the pointer */
 				/* dataTape[dataTapeIndex] = (await getKeypress()).charCodeAt(0); */
 				/* getchar(); ? getch(); ? getc(); ? */
+
+				/* getchar() blocks execution until newline or EOF.
+				valueFromGetchar = getchar(); */
+
+				/* #if MACOS or LINUX */
+				valueFromGetchar = getch();
+				/* #endif */
+
+				/* getc(stdin) also blocks execution until newline or EOF.
+				valueFromGetchar = getc(stdin); */
+
+				if (valueFromGetchar == EOF) {
+					/* fprintf(stderr, "getchar() returned EOF\n");
+					return 1; */
+
+					/* Or just: */
+					valueFromGetchar = 0; /* Handle the EOF like a null char */
+					printf("getchar() returned EOF\n");
+				} else {
+					printf("getchar() returned char '%c', int %d\n", (char)valueFromGetchar, valueFromGetchar);
+				}
+
+				dataTape[dataTapeIndex] = (char)valueFromGetchar;
 				break;
 
 			case '.': /* Output the character signified by the cell at the pointer */
-				/* c = String.fromCharCode(dataTape[dataTapeIndex]);
-				stdout.write(c);
-
-				if (maxCharsToPrint > 0) {
+				/* if (maxCharsToPrint > 0) {
 					maxCharsToPrint--;
 				} */
 
@@ -240,12 +310,11 @@ int mainDelegate(void) {
 	return 0; /* Zero (as a Unix exit code) means success. */
 }
 
-/* int main(int argc, char * argv[]) { */
-int main(void) {
+int main(int argc, char * argv[]) {
 	programTape = (char *)malloc(maxProgramTapeLength * sizeof(char));
 	dataTape = (char *)malloc(maxDataTapeLength * sizeof(char));
 
-	const int status = mainDelegate();
+	const int status = mainDelegate(argc, argv);
 
 	free(dataTape);
 	free(programTape);
