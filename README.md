@@ -1,5 +1,5 @@
 # brainfsck-interpreter
-A Typescript implementation of a brainf*ck interpreter.
+Brainf*ck interpreter implementations in C and Typescript.
 
 (Pardon my language.)
 
@@ -47,7 +47,26 @@ An example of a "Hello, World!" program:
 ---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
 ```
 
-## Installation and Invocation
+## Installation and Invocation (C)
+
+(These instructions for the C implementation were tested on macOS)
+
+First, ensure that gcc and make are installed.
+
+After cloning this repo, cd into its directory and do this:
+
+```sh
+$ cd src/c
+$ make
+```
+
+Then pass in the path of a brainf*ck program file as a command-line argument:
+
+```sh
+$ ./brainfsck ../../examples/hello-world.bf
+```
+
+## Installation and Invocation (Typescript)
 
 After cloning this repo, cd into its directory and do this:
 
